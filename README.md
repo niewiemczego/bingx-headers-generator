@@ -1,0 +1,1 @@
+# bingx-headers-generator
