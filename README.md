@@ -1,6 +1,10 @@
+# THIS PROJECT IS FOR EDUCATIONAL PURPOSES ONLY!
+
+Please keep in mind that I do **NOT** encourage breaking any sort of security on websites. In addition, the project will not be updated in case of security changes by BingX
+
 # bingx-headers-generator
 
-BingX Headers Generator is an python library which generates for you all required headers to make requests to BingX non-public API endpoints
+BingX Headers Generator is an python library which generates for you all required headers to make requests to BingX API endpoints
 
 # Installation
 
@@ -45,7 +49,3 @@ res = bingx_headers_generator.make_request(
 # How did I find out how to generate headers?
 
 In one of their site files(**https://bin.bb-os.com/_nuxt/1491b29.js**) I found interesting function - `function wt(e)` Go check it and you follow other functions that are called in `wt()` and I'm sure you will start to understand the whole process of generating headers
-
-# THIS PROJECT IS ONLY FOR LEARN PURPOSE!
-
-Please keep in mind that I do **NOT** encourage breaking any sort of security on websites
