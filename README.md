@@ -11,7 +11,7 @@ pip install bingx-headers-generator
 # Examples
 
 ```python
-from bingx_headers_gen import BingXHeadersGenerator
+from bingx_headers_generator import BingXHeadersGenerator
 
 # custom headers are NOT necessary, but are just an additional option you can pass to request
 custom_headers = {
