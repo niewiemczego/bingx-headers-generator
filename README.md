@@ -49,3 +49,6 @@ res = bingx_headers_generator.make_request(
 # How did I find out how to generate headers?
 
 In one of their site files(**https://bin.bb-os.com/_nuxt/1491b29.js**) I found interesting function - `function wt(e)` Go check it and you follow other functions that are called in `wt()` and I'm sure you will start to understand the whole process of generating headers
+
+<img width="1134" alt="Screenshot 2023-04-04 at 23 12 48" src="https://user-images.githubusercontent.com/50675404/229923789-89571a8b-7372-4c1a-9386-6b9ceecd3fe3.png">
+
