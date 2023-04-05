@@ -1,11 +1,14 @@
-import time, requests, uuid
+import time
+import uuid
 from hashlib import sha256
 from typing import Any
+
+import cloudscraper
 
 
 class BingXHeadersGenerator:
     __DEFAULT_BEGINNING_VALUE = "95d65c73dc5c4370ae9018fb7f2eab69"  # this value can be found in the one of their obfuscated JS files on their website
-    __DEFAULT_PAGE_SIZE = "10"
+    __DEFAULT_PAGE_SIZE = "100"
 
     def __init__(
         self,
@@ -22,6 +25,7 @@ class BingXHeadersGenerator:
         self.__app_id = app_id
         self.__main_app_id = main_app_id
         self.__platform_id = platform_id
+        self.session = cloudscraper.create_scraper()
 
     def generate_encryption_content(self) -> str:
         """
@@ -31,13 +35,19 @@ class BingXHeadersGenerator:
         self.__timestamp = str(int(time.time() * 1000))
         self.__trace_id = str(uuid.uuid4())
         self.__device_id = str(uuid.uuid4())
-        payload = (
-            '{"apiIdentity":"api_identity","pageId":"0","pageSize":"__DEFAULT_PAGE_SIZE","uid":"user_id"}'.replace(
-                "api_identity", self.__api_identity
+        if self.__api_identity != "0":
+            payload = (
+                '{"apiIdentity":"api_identity","pageId":"0","pageSize":"__DEFAULT_PAGE_SIZE","uid":"user_id"}'
+                .replace("api_identity", self.__api_identity)
+                .replace("user_id", self.__user_id)
+                .replace("__DEFAULT_PAGE_SIZE", self.__DEFAULT_PAGE_SIZE)
             )
-            .replace("user_id", self.__user_id)
-            .replace("__DEFAULT_PAGE_SIZE", self.__DEFAULT_PAGE_SIZE)
-        )
+        else:
+            payload = (
+                '{"pageId":"0","pageSize":"__DEFAULT_PAGE_SIZE","trader":"user_id"}'
+                .replace("user_id", self.__user_id)
+                .replace("__DEFAULT_PAGE_SIZE", self.__DEFAULT_PAGE_SIZE)
+            )
         encryption_content = "".join(
             [
                 self.__DEFAULT_BEGINNING_VALUE,
@@ -81,9 +91,7 @@ class BingXHeadersGenerator:
         }
         return headers | custom_headers
 
-    def make_request(
-        self, type: str, base_url: str, custom_headers: dict[str, Any] = {}
-    ) -> requests.Response:
+    def make_request(self, type: str, base_url: str, custom_headers: dict[str, Any] = {}):
         """
         This function makes a request to the API using the given type (GET, POST, etc.) and base URL
 
@@ -91,7 +99,9 @@ class BingXHeadersGenerator:
         :param base_url: The base url for the request i.e. https://api-app.we-api.com/api/copytrade/v1/real/trader/positions
         """
         headers = self.generate_headers(custom_headers)
-
-        complete_url = f"{base_url}?uid={self.__user_id}&apiIdentity={self.__api_identity}&pageId=0&pageSize={self.__DEFAULT_PAGE_SIZE}"
-        res = requests.request(type.upper(), complete_url, headers=headers)
+        if self.__api_identity != "0":
+            complete_url = f"{base_url}?uid={self.__user_id}&apiIdentity={self.__api_identity}&pageId=0&pageSize={self.__DEFAULT_PAGE_SIZE}"
+        else:
+            complete_url = f"{base_url}?trader={self.__user_id}&pageId=0&pageSize={self.__DEFAULT_PAGE_SIZE}"
+        res = self.session.request(type.upper(), complete_url, headers=headers)
         return res
