@@ -91,7 +91,7 @@ class BingXHeadersGenerator:
         }
         return headers | custom_headers
 
-    def make_request(self, type: str, base_url: str, custom_headers: dict[str, Any] = {}):
+    def make_request(self, type: str, base_url: str, custom_headers: dict[str, Any] = {}) -> cloudscraper.requests.Response:
         """
         This function makes a request to the API using the given type (GET, POST, etc.) and base URL
 
