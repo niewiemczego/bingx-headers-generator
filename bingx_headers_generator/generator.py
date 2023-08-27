@@ -7,101 +7,95 @@ import cloudscraper
 
 
 class BingXHeadersGenerator:
-    __DEFAULT_BEGINNING_VALUE = "95d65c73dc5c4370ae9018fb7f2eab69"  # this value can be found in the one of their obfuscated JS files on their website
-    __DEFAULT_PAGE_SIZE = "100"
+    _DEFAULT_BEGINNING_VALUE = "95d65c73dc5c4370ae9018fb7f2eab69"
+    _DEFAULT_PAGE_SIZE = "500"
+    _DEFAULT_PLATFORM_ID = "30"
 
-    def __init__(
-        self,
-        app_version: str,
-        user_id: str,
-        api_identity: str,
-        app_id: str = "30004",
-        main_app_id: str = "10009",
-        platform_id: str = "30",
-    ):
-        self.__app_version = app_version
-        self.__user_id = user_id
-        self.__api_identity = api_identity
-        self.__app_id = app_id
-        self.__main_app_id = main_app_id
-        self.__platform_id = platform_id
+    def __init__(self, app_version: str, user_id: str, api_identity: str) -> None:
+        self.app_version = app_version
+        self.user_id = user_id
+        self.api_identity = api_identity
         self.session = cloudscraper.create_scraper()
 
-    def generate_encryption_content(self) -> str:
+    def generate_headers(self, base_url: str) -> dict[str, Any]:
         """
-        It generates the encryption content for the request which is used to generate the sign.\n
-        The encryption content is created by concatenating specific values in a specific order.
+        The `generate_headers` function generates a dictionary of headers for making API requests, including
+        app version, app ID, device ID, timestamp, and trace ID.
+
+        :param base_url: The `base_url` parameter is a string that represents the base URL of the API
+        endpoint. It is used to determine the specific logic for generating the headers based on the value
+        of `base_url`
+        :return: a dictionary containing various headers for an API request.
         """
-        self.__timestamp = str(int(time.time() * 1000))
-        self.__trace_id = str(uuid.uuid4())
-        self.__device_id = str(uuid.uuid4())
-        if self.__api_identity != "0":
-            payload = (
-                '{"apiIdentity":"api_identity","pageId":"0","pageSize":"__DEFAULT_PAGE_SIZE","uid":"user_id"}'
-                .replace("api_identity", self.__api_identity)
-                .replace("user_id", self.__user_id)
-                .replace("__DEFAULT_PAGE_SIZE", self.__DEFAULT_PAGE_SIZE)
-            )
+        _timestamp = str(int(time.time() * 1000))
+        _trace_id, _device_id = str(uuid.uuid4()), str(uuid.uuid4())
+
+        if self.api_identity != "0" or base_url == "https://bingx.com/api/v3/trader/orders/v3":
+            _encryption_content = self._generate_encryption_content(_timestamp, _trace_id, _device_id)
         else:
-            payload = (
-                '{"pageId":"0","pageSize":"__DEFAULT_PAGE_SIZE","trader":"user_id"}'
-                .replace("user_id", self.__user_id)
-                .replace("__DEFAULT_PAGE_SIZE", self.__DEFAULT_PAGE_SIZE)
-            )
+            _encryption_content = self._generate_encryption_content(_timestamp, _trace_id, _device_id, is_standard=True)
+
+        headers = {
+            "app_version": self.app_version,
+            "appid": "30004",
+            "channel": "official",
+            "device_id": _device_id,
+            "lang": "en",
+            "mainappid": "10009",
+            "platformid": self._DEFAULT_PLATFORM_ID,
+            "sign": self._generate_sign(_encryption_content),
+            "timestamp": _timestamp,
+            "timezone": "2",
+            "traceid": _trace_id,
+        }
+        return headers
+
+    def _generate_encryption_content(
+        self, timestamp: str, trace_id: str, device_id: str, is_standard: bool = False
+    ) -> str:
+        """
+        The `_generate_encryption_content` function generates an encryption content string using various
+        parameters.
+
+        :param timestamp: The timestamp parameter is a string representing the current timestamp. It is used
+        to generate a unique value for each encryption content
+        :param trace_id: The `trace_id` parameter is a unique identifier that is used to track a specific
+        request or transaction. It helps in identifying and tracing the flow of requests across different
+        systems or components
+        :param device_id: The `device_id` parameter is a string that represents the unique identifier of the
+        device being used. It is used in the encryption content generation process
+        :param is_standard: The `is_standard` parameter is a boolean flag that indicates whether the
+        encryption content should be generated using a standard payload template or a non-standard payload
+        template
+        :return: the encryption content, which is a string.
+        """
+        payload_template = (
+            '{"pageId":"0","pageSize":"_DEFAULT_PAGE_SIZE","trader":"user_id"}'
+            if is_standard
+            else '{"apiIdentity":"api_identity","copyTradeLabelType":"1","pageId":"0","pageSize":"_DEFAULT_PAGE_SIZE","uid":"user_id"}'
+        )
+        payload = (
+            payload_template.replace("user_id", self.user_id)
+            .replace("_DEFAULT_PAGE_SIZE", self._DEFAULT_PAGE_SIZE)
+            .replace("api_identity", self.api_identity)
+        )
+
         encryption_content = "".join(
             [
-                self.__DEFAULT_BEGINNING_VALUE,
-                self.__timestamp,
-                self.__trace_id,
-                self.__device_id,
-                self.__platform_id,
-                self.__app_version,
+                self._DEFAULT_BEGINNING_VALUE,
+                timestamp,
+                trace_id,
+                device_id,
+                self._DEFAULT_PLATFORM_ID,
+                self.app_version,
                 payload,
             ]
         )
         return encryption_content
 
-    def generate_sign(self) -> str:
+    def _generate_sign(self, encryption_content: str) -> str:
         """
-        It generates a signature for the request.\n
-        The signature is generated by hashing the encryption content with SHA256 and then converting the hash to uppercase.
+        The function `_generate_sign` takes a string as input, encodes it using UTF-8, computes the SHA256
+        hash, and returns the hexadecimal representation of the hash in uppercase.
         """
-        encryption_content = self.generate_encryption_content()
-        sign = str(sha256(encryption_content.encode("utf-8")).hexdigest()).upper()
-        return sign
-
-    def generate_headers(self, custom_headers: dict[str, Any] = {}) -> dict[str, Any]:
-        """
-        It generates a dictionary of headers for the request.\n
-        The headers are used to authenticate the request.
-        """
-        sign = self.generate_sign()
-        headers = {
-            "app_version": self.__app_version,
-            "appid": self.__app_id,
-            "channel": "official",
-            "device_id": self.__device_id,
-            "lang": "en",
-            "mainappid": self.__main_app_id,
-            "platformid": self.__platform_id,
-            "sign": sign,
-            "timestamp": self.__timestamp,
-            "timezone": "1",
-            "traceid": self.__trace_id,
-        }
-        return headers | custom_headers
-
-    def make_request(self, type: str, base_url: str, custom_headers: dict[str, Any] = {}) -> cloudscraper.requests.Response:
-        """
-        This function makes a request to the API using the given type (GET, POST, etc.) and base URL
-
-        :param type: str - The type of request you want to make i.e. GET or POST
-        :param base_url: The base url for the request i.e. https://api-app.we-api.com/api/copytrade/v1/real/trader/positions
-        """
-        headers = self.generate_headers(custom_headers)
-        if self.__api_identity != "0":
-            complete_url = f"{base_url}?uid={self.__user_id}&apiIdentity={self.__api_identity}&pageId=0&pageSize={self.__DEFAULT_PAGE_SIZE}"
-        else:
-            complete_url = f"{base_url}?trader={self.__user_id}&pageId=0&pageSize={self.__DEFAULT_PAGE_SIZE}"
-        res = self.session.request(type.upper(), complete_url, headers=headers)
-        return res
+        return sha256(encryption_content.encode("utf-8")).hexdigest().upper()
