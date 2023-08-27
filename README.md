@@ -1,6 +1,6 @@
 # THIS PROJECT IS FOR EDUCATIONAL PURPOSES ONLY!
 
-Please keep in mind that I do **NOT** encourage breaking any sort of security on websites. In addition, the project will not be updated in case of security changes by BingX
+Please keep in mind that I do **NOT** encourage breaking any sort of security on websites.
 
 # bingx-headers-generator
 
