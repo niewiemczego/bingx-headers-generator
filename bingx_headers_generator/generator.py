@@ -3,19 +3,16 @@ import uuid
 from hashlib import sha256
 from typing import Any
 
-import cloudscraper
-
 
 class BingXHeadersGenerator:
     _DEFAULT_BEGINNING_VALUE = "95d65c73dc5c4370ae9018fb7f2eab69"
-    _DEFAULT_PAGE_SIZE = "500"
     _DEFAULT_PLATFORM_ID = "30"
 
-    def __init__(self, app_version: str, user_id: str, api_identity: str) -> None:
+    def __init__(self, app_version: str, user_id: str, api_identity: str, default_page_size: str = "10") -> None:
         self.app_version = app_version
         self.user_id = user_id
         self.api_identity = api_identity
-        self.session = cloudscraper.create_scraper()
+        self.default_page_size = default_page_size
 
     def generate_headers(self, base_url: str) -> dict[str, Any]:
         """
@@ -70,13 +67,13 @@ class BingXHeadersGenerator:
         :return: the encryption content, which is a string.
         """
         payload_template = (
-            '{"pageId":"0","pageSize":"_DEFAULT_PAGE_SIZE","trader":"user_id"}'
+            '{"pageId":"0","pageSize":"default_page_size","trader":"user_id"}'
             if is_standard
-            else '{"apiIdentity":"api_identity","copyTradeLabelType":"1","pageId":"0","pageSize":"_DEFAULT_PAGE_SIZE","uid":"user_id"}'
+            else '{"apiIdentity":"api_identity","copyTradeLabelType":"1","pageId":"0","pageSize":"default_page_size","uid":"user_id"}'
         )
         payload = (
             payload_template.replace("user_id", self.user_id)
-            .replace("_DEFAULT_PAGE_SIZE", self._DEFAULT_PAGE_SIZE)
+            .replace("default_page_size", self.default_page_size)
             .replace("api_identity", self.api_identity)
         )
 
