@@ -8,7 +8,7 @@ class BingXHeadersGenerator:
     _DEFAULT_BEGINNING_VALUE = "95d65c73dc5c4370ae9018fb7f2eab69"
     _DEFAULT_PLATFORM_ID = "30"
 
-    def __init__(self, app_version: str, user_id: str, api_identity: str, default_page_size: str = "10") -> None:
+    def __init__(self, app_version: str, user_id: str, api_identity: str, default_page_size: int = 10) -> None:
         self.app_version = app_version
         self.user_id = user_id
         self.api_identity = api_identity
@@ -27,10 +27,7 @@ class BingXHeadersGenerator:
         _timestamp = str(int(time.time() * 1000))
         _trace_id, _device_id = str(uuid.uuid4()), str(uuid.uuid4())
 
-        if self.api_identity != "0" or base_url == "https://bingx.com/api/v3/trader/orders/v3":
-            _encryption_content = self._generate_encryption_content(_timestamp, _trace_id, _device_id)
-        else:
-            _encryption_content = self._generate_encryption_content(_timestamp, _trace_id, _device_id, is_standard=True)
+        _encryption_content = self._generate_encryption_content(base_url, _timestamp, _trace_id, _device_id)
 
         headers = {
             "app_version": self.app_version,
@@ -47,9 +44,7 @@ class BingXHeadersGenerator:
         }
         return headers
 
-    def _generate_encryption_content(
-        self, timestamp: str, trace_id: str, device_id: str, is_standard: bool = False
-    ) -> str:
+    def _generate_encryption_content(self, base_url: str, timestamp: str, trace_id: str, device_id: str) -> str:
         """
         The `_generate_encryption_content` function generates an encryption content string using various
         parameters.
@@ -67,14 +62,14 @@ class BingXHeadersGenerator:
         :return: the encryption content, which is a string.
         """
         payload_template = (
-            '{"pageId":"0","pageSize":"default_page_size","trader":"user_id"}'
-            if is_standard
-            else '{"apiIdentity":"api_identity","copyTradeLabelType":"1","pageId":"0","pageSize":"default_page_size","uid":"user_id"}'
+            '{"apiIdentity":"api_identity","copyTradeLabelType":"1","pageId":"0","pageSize":"default_page_size","uid":"user_id"}'
+            if self.api_identity != "0" or base_url == "https://bingx.com/api/v3/trader/orders/v3"
+            else '{"pageId":"0","pageSize":"default_page_size","trader":"user_id"}'
         )
         payload = (
             payload_template.replace("user_id", self.user_id)
-            .replace("default_page_size", self.default_page_size)
             .replace("api_identity", self.api_identity)
+            .replace("default_page_size", str(self.default_page_size))
         )
 
         encryption_content = "".join(
